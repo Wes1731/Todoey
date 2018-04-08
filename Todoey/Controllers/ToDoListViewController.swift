@@ -12,26 +12,33 @@ class ToDoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
     let defaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let newItem = Item()
-        newItem.title = "To Do Item 1"
-        itemArray.append(newItem)
+        //print(self.dataFilePath)
         
-        let newItem2 = Item()
-        newItem2.title = "To Do Item 2"
-        itemArray.append(newItem2)
+        loadItems()
         
-        let newItem3 = Item()
-        newItem3.title = "To Do Item 3"
-        itemArray.append(newItem3)
-        
-        if let items = defaults.array(forKey: "ToDoListArray") as? [Item] {
-            itemArray = items
-        }
+//          old item restoring data:
+//        let newItem = Item()
+//        newItem.title = "To Do Item 1"
+//        itemArray.append(newItem)
+//
+//        let newItem2 = Item()
+//        newItem2.title = "To Do Item 2"
+//        itemArray.append(newItem2)
+//
+//        let newItem3 = Item()
+//        newItem3.title = "To Do Item 3"
+//        itemArray.append(newItem3)
+//
+//        if let items = defaults.array(forKey: "ToDoListArray") as? [Item] {
+//            itemArray = items
+//        }
         
     }
     
@@ -69,16 +76,16 @@ class ToDoListViewController: UITableViewController {
         //concise method:
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        //slow method:
-//        if itemArray[indexPath.row].done == false {
-//            itemArray[indexPath.row].done = true
-//        } else {
-//            itemArray[indexPath.row].done = false
-//        }
-        
-        tableView.reloadData()
-        
         tableView.deselectRow(at: indexPath, animated: true)
+        
+        saveItems()
+        
+        //slow method:
+        //        if itemArray[indexPath.row].done == false {
+        //            itemArray[indexPath.row].done = true
+        //        } else {
+        //            itemArray[indexPath.row].done = false
+        //        }
     }
     
     //MARK - Add Items To List
@@ -96,9 +103,9 @@ class ToDoListViewController: UITableViewController {
             
             self.itemArray.append(newItem)
             
-            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
-            
             self.tableView.reloadData()
+            
+            self.saveItems()
         }
         
         alert.addTextField { (alertTextField) in
@@ -109,6 +116,32 @@ class ToDoListViewController: UITableViewController {
         alert.addAction(action)
         
         present(alert, animated: true, completion: nil)
+    }
+    
+    //MARK - Model Manipulation Methods
+    
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array: \(error)")
+        }
+        
+        tableView.reloadData()
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+            itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding Item Array: \(error)")
+            }
+        }
     }
 }
 
